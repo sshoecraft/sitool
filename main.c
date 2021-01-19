@@ -412,7 +412,22 @@ int si_start(si_session_t *s) {
 	return (retries < 0 ? 1 : 0);
 }
 
-void si_stop(si_session_t *s) {
+int si_stop(si_session_t *s) {
+	unsigned char b;
+	int retries;
+	uint8_t data[8];
+
+	b = 0x02;
+	retries=5;
+	while(retries--) {
+		if (s->tp->write(s->tp_handle,0x35c,&b,1)) return 1;
+		if (s->get_data(s,0x307,data,8) == 0) {
+			bindump("data",data,8);
+			if ((data[3] & 0x0002) == 0) return 0;
+		}
+		sleep(1);
+	}
+	return (retries < 0 ? 1 : 0);
 }
 
 void usage(char *name) {
