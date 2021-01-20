@@ -1,8 +1,7 @@
 
 PROG=$(shell basename $(shell pwd))
 MYBMM_SRC=../mybmm
-TRANSPORTS=$(shell cat $(MYBMM_SRC)/Makefile | grep ^TRANSPORTS | awk -F= '{ print $$2 }')
-SRCS=main.c module.c si.c si_info.c parson.c list.c utils.c $(TRANSPORTS)
+SRCS=main.c module.c si.c can.c si_info.c parson.c list.c utils.c $(TRANSPORTS)
 OBJS=$(SRCS:.c=.o)
 CFLAGS=-DJKTOOL -I$(MYBMM_SRC)
 #CFLAGS+=-Wall -O2 -pipe
@@ -17,8 +16,6 @@ all: $(PROG)
 
 $(PROG): $(OBJS) $(DEPS)
 	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROG) $(OBJS) $(LIBS)
-
-#$(OBJS): Makefile *.h
 
 include $(MYBMM_SRC)/Makefile.dep
 

@@ -24,7 +24,7 @@ typedef struct mybmm_config mybmm_config_t;
 #include "mybmm.h"
 #include "si_info.h"
 
-int debug = 1;
+int debug = 0;
 
 int outfmt = 0;
 FILE *outfp;
@@ -38,31 +38,31 @@ char *serialized_string = NULL;
 #define _getshort(p) (short)(*(p) | (*((p)+1) << 8))
 #define _getint(p) (int)(*(p) | (*((p)+1) << 8) | (*((p)+2) << 16) | (*((p)+3) << 24))
 
-enum JBD_PARM_DT {
-	JBD_PARM_DT_UNK,
-	JBD_PARM_DT_INT,		/* Std int/number */
-	JBD_PARM_DT_FLOAT,		/* floating pt */
-	JBD_PARM_DT_STR,		/* string */
-	JBD_PARM_DT_TEMP,		/* temp */
-	JBD_PARM_DT_DATE,		/* date */
-	JBD_PARM_DT_PCT,		/* % */
-	JBD_PARM_DT_FUNC,		/* function bits */
-	JBD_PARM_DT_NTC,		/* ntc bits */
-	JBD_PARM_DT_B0,			/* byte 0 */
-	JBD_PARM_DT_B1,			/* byte 1 */
+enum SI_PARM_DT {
+	SI_PARM_DT_UNK,
+	SI_PARM_DT_INT,			/* Std int/number */
+	SI_PARM_DT_FLOAT,		/* floating pt */
+	SI_PARM_DT_STR,			/* string */
+	SI_PARM_DT_TEMP,		/* temp */
+	SI_PARM_DT_DATE,		/* date */
+	SI_PARM_DT_PCT,			/* % */
+	SI_PARM_DT_FUNC,		/* function bits */
+	SI_PARM_DT_NTC,			/* ntc bits */
+	SI_PARM_DT_B0,			/* byte 0 */
+	SI_PARM_DT_B1,			/* byte 1 */
 };
 
-struct jk_params {
+struct si_params {
 	uint8_t reg;
 	char *label;
 	int dt;
 } params[] = {
 	{ 0,0,0 }
 };
-typedef struct jk_params jk_params_t;
+typedef struct si_params si_params_t;
 
-struct jk_params *_getp(char *label) {
-	register struct jk_params *pp;
+struct si_params *_getp(char *label) {
+	register struct si_params *pp;
 
 	dprintf(3,"label: %s\n", label);
 	for(pp = params; pp->label; pp++) {
@@ -159,31 +159,31 @@ void disp(char *label, int dt, ...) {
 	va_start(ap,dt);
 	switch(dt) {
 	default:
-	case JBD_PARM_DT_INT:
+	case SI_PARM_DT_INT:
 		_dint(label,va_arg(ap,int));
 		break;
-	case JBD_PARM_DT_FLOAT:
+	case SI_PARM_DT_FLOAT:
 		_dfloat(label,va_arg(ap,double));
 		break;
-	case JBD_PARM_DT_STR:
+	case SI_PARM_DT_STR:
 		_dstr(label,va_arg(ap,char *));
 		break;
-	case JBD_PARM_DT_TEMP:
+	case SI_PARM_DT_TEMP:
 		_dint(label,va_arg(ap,int));
 		break;
-	case JBD_PARM_DT_DATE:
+	case SI_PARM_DT_DATE:
 		_dint(label,va_arg(ap,int));
 		break;
-	case JBD_PARM_DT_FUNC:
+	case SI_PARM_DT_FUNC:
 		_dint(label,va_arg(ap,int));
 		break;
-	case JBD_PARM_DT_NTC:
+	case SI_PARM_DT_NTC:
 		_dint(label,va_arg(ap,int));
 		break;
-        case JBD_PARM_DT_B0:
+        case SI_PARM_DT_B0:
 		_dint(label,va_arg(ap,int));
 		break;
-        case JBD_PARM_DT_B1:
+        case SI_PARM_DT_B1:
 		_dint(label,va_arg(ap,int));
 		break;
 	}
@@ -192,24 +192,24 @@ void disp(char *label, int dt, ...) {
 void pdisp(char *label, int dt, uint8_t *data, int len) {
 	dprintf(3,"label: %s, dt: %d\n", label, dt);
 	switch(dt) {
-	case JBD_PARM_DT_INT:
-	case JBD_PARM_DT_TEMP:
-	case JBD_PARM_DT_DATE:
-	case JBD_PARM_DT_PCT:
-	case JBD_PARM_DT_FUNC:
-	case JBD_PARM_DT_NTC:
+	case SI_PARM_DT_INT:
+	case SI_PARM_DT_TEMP:
+	case SI_PARM_DT_DATE:
+	case SI_PARM_DT_PCT:
+	case SI_PARM_DT_FUNC:
+	case SI_PARM_DT_NTC:
 		_dint(label,(int)_getshort(data));
 		break;
-	case JBD_PARM_DT_B0:
+	case SI_PARM_DT_B0:
 		_dint(label,data[0]);
 		break;
-	case JBD_PARM_DT_B1:
+	case SI_PARM_DT_B1:
 		_dint(label,data[1]);
 		break;
-	case JBD_PARM_DT_FLOAT:
+	case SI_PARM_DT_FLOAT:
 		_dfloat(label,(float)_getshort(data));
 		break;
-	case JBD_PARM_DT_STR:
+	case SI_PARM_DT_STR:
 		data[len] = 0;
 		trim((char *)data);
 		_dstr(label,(char *)data);
@@ -222,12 +222,33 @@ void _outpower(char *label, si_power_t *p) {
 	char str[32],temp[36];
 
 	str[0] = 0;
-	sprintf(temp,"%.2f",p->l1);
+	sprintf(temp,"%3.2f",p->l1);
 	_addstr(str,temp);
-	sprintf(temp,"%.2f",p->l2);
+	sprintf(temp,"%3.2f",p->l2);
 	_addstr(str,temp);
-	sprintf(temp,"%.2f",p->l3);
+	sprintf(temp,"%3.2f",p->l3);
 	_addstr(str,temp);
+	switch(outfmt) {
+	case 2:
+		sprintf(temp,"[ %s ]",str);
+		dprintf(1,"temp: %s\n", temp);
+		json_object_dotset_value(root_object, label, json_parse_string(temp));
+		break;
+	case 1:
+		printf("%s,%s\n",label,str);
+		break;
+	default:
+		printf("%-25s %s\n",label,str);
+		break;
+	}
+}
+
+void _outrelay(char *label, int r1, int r2) {
+	char str[32],temp[36];
+
+	str[0] = 0;
+	_addstr(str,r1 ? "1" : "0");
+	_addstr(str,r2 ? "1" : "0");
 	switch(outfmt) {
 	case 2:
 		sprintf(temp,"[ %s ]",str);
@@ -248,136 +269,49 @@ void display_info(si_info_t *info) {
 	_outpower("Active SI",&info->active.si);
 	_outpower("ReActive Grid",&info->reactive.grid);
 	_outpower("ReActive SI",&info->reactive.si);
-#if 0
-	struct {
-		power_t grid;
-		power_t si;
-	} active;
-	struct {
-		power_t grid;
-		power_t si;
-	} reactive;
-	power_t voltage;
-	float frequency;
-	float battery_voltage;
-	float battery_current;
-	float battery_temp;
-	float battery_soc;
-	float battery_soh;
-	float battery_cvsp;
-	struct {
-		unsigned relay1: 1;
-		unsigned relay2: 1;
-		unsigned s1_relay1: 1;
-		unsigned s1_relay2: 1;
-		unsigned s2_relay1: 1;
-		unsigned s2_relay2: 1;
-		unsigned s3_relay1: 1;
-		unsigned s3_relay2: 1;
-		unsigned GnRn: 1;
-		unsigned s1_GnRn: 1;
-		unsigned s2_GnRn: 1;
-		unsigned s3_GnRn: 1;
-		unsigned AutoGn: 1;
-		unsigned AutoLodExt: 1;
-		unsigned AutoLodSoc: 1;
-		unsigned Tm1: 1;
-		unsigned Tm2: 1;
-		unsigned ExtPwrDer: 1;
-		unsigned ExtVfOk: 1;
-		unsigned GdOn: 1;
-		unsigned Error: 1;
-		unsigned Run: 1;
-		unsigned BatFan: 1;
-		unsigned AcdCir: 1;
-		unsigned MccBatFan: 1;
-		unsigned MccAutoLod: 1;
-		unsigned Chp: 1;
-		unsigned ChpAdd: 1;
-		unsigned SiComRemote: 1;
-		unsigned OverLoad: 1;
-		unsigned ExtSrcConn: 1;
-		unsigned Silent: 1;
-		unsigned Current: 1;
-		unsigned FeedSelfC: 1;
-	} bits;
-	power_t load;
-	uint8_t charging_proc;
-	uint8_t state;
-	uint16_t errmsg;
-	power_t ac2;
-	float ac2_frequency;
-	float PVPwrAt;
-	float GdCsmpPwrAt;
-	float GdFeedPwr;
-
-	dfloat("Battery Voltage","%.3f",info->battery_voltage);
-	dfloat("battCurrent","%.3f",info->current);
-	dfloat("DesignCapacity","%.3f",info->fullcap);
-	dfloat("RemainingCapacity","%.3f",info->capacity);
-	_dint("PercentCapacity",info->pctcap);
-	_dint("CycleCount",info->cycles);
-	_dint("Probes",info->probes);
-	switch(outfmt) {
-	case 2:
-		p = temp;
-		p += sprintf(p,"[ ");
-		for(i=0; i < info->probes; i++) {
-			if (i) p += sprintf(p,",");
-			p += sprintf(p, "%.1f",info->temps[i]);
-		}
-		strcat(temp," ]");
-                dprintf(1,"temp: %s\n", temp);
-                json_object_dotset_value(root_object, "Temps", json_parse_string(temp));
-                break;
-	default:
-		p = temp;
-		for(i=0; i < info->probes; i++) {
-			if (i) p += sprintf(p,"%c",sepch);
-			p += sprintf(p, "%.1f",info->temps[i]);
-		}
-		dstr("Temps","%s",temp);
-                break;
-	}
-	_dint("Strings",info->strings);
-	switch(outfmt) {
-	case 2:
-		p = temp;
-		p += sprintf(p,"[ ");
-		for(i=0; i < info->strings; i++) {
-			if (i) p += sprintf(p,",");
-			p += sprintf(p, "%.3f",info->cellvolt[i]);
-		}
-		strcat(temp," ]");
-                dprintf(1,"temp: %s\n", temp);
-                json_object_dotset_value(root_object, "Cells", json_parse_string(temp));
-                break;
-	default:
-		p = temp;
-		for(i=0; i < info->strings; i++) {
-			if (i) p += sprintf(p,"%c",sepch);
-			p += sprintf(p, "%.3f",info->cellvolt[i]);
-		}
-		dstr("Cells","%s",temp);
-                break;
-	}
-	dfloat("CellTotal","%.3f",info->cell_total);
-	dfloat("CellMin","%.3f",info->cell_min);
-	dfloat("CellMax","%.3f",info->cell_max);
-	dfloat("CellDiff","%.3f",info->cell_diff);
-	dfloat("CellAvg","%.3f",info->cell_avg);
-	_dstr("DeviceName",info->model);
-	_dstr("ManufactureDate",info->mfgdate);
-	dfloat("Version","%.1f",info->version);
-	temp[0] = 0;
-	p = temp;
-	if (info->fetstate & JBD_MOS_CHARGE) p += sprintf(p,"Charge");
-	if (info->fetstate & JBD_MOS_DISCHARGE) {
-		if (info->fetstate & JBD_MOS_CHARGE) p += sprintf(p,sepstr);
-		p += sprintf(p,"Discharge");
-	}
-	dstr("FET","%s",temp);
-#endif
+	_outpower("Voltage",&info->voltage);
+	dfloat("Frequency","%2.2f",info->frequency);
+	dfloat("Battery Voltage","%3.2f",info->battery_voltage);
+	dfloat("Battery Current","%3.2f",info->battery_current);
+	dfloat("Battery Temp","%3.2f",info->battery_temp);
+	dfloat("Battery SoC","%3.2f",info->battery_soc);
+	dfloat("Battery Charge Volt-age Set-point","%3.2f",info->battery_cvsp);
+	_outrelay("Master Relay",info->bits.relay1,info->bits.relay2);
+	_outrelay("Slave1 Relays",info->bits.s1_relay1,info->bits.s1_relay2);
+	_outrelay("Slave2 Relays",info->bits.s2_relay1,info->bits.s2_relay2);
+	_outrelay("Slave3 Relays",info->bits.s3_relay1,info->bits.s3_relay2);
+	_dstr("Generator Running",info->bits.GnRn ? "true" : "false");
+	_dstr("Generator Autostart",info->bits.AutoGn ? "true" : "false");
+	_dstr("AutoLodExt",info->bits.AutoLodExt ? "true" : "false");
+	_dstr("AutoLodSoc",info->bits.AutoLodSoc ? "true" : "false");
+	_dstr("Tm1",info->bits.Tm1 ? "true" : "false");
+	_dstr("Tm2",info->bits.Tm2 ? "true" : "false");
+	_dstr("ExtPwrDer",info->bits.ExtPwrDer ? "true" : "false");
+	_dstr("ExtVfOk",info->bits.ExtVfOk ? "true" : "false");
+	_dstr("Grid On",info->bits.GdOn ? "true" : "false");
+	_dstr("Error",info->bits.Error ? "true" : "false");
+	_dstr("Run",info->bits.Run ? "true" : "false");
+	_dstr("Battery Fan On",info->bits.BatFan ? "true" : "false");
+	_dstr("Acid Circulation On",info->bits.AcdCir ? "true" : "false");
+	_dstr("MccBatFan",info->bits.MccBatFan ? "true" : "false");
+	_dstr("MccAutoLod",info->bits.MccAutoLod ? "true" : "false");
+	_dstr("CHP #1 On",info->bits.Chp ? "true" : "false");
+	_dstr("CHP #2 On",info->bits.ChpAdd ? "true" : "false");
+	_dstr("Remote relay control enabled",info->bits.SiComRemote ? "true" : "false");
+	_dstr("Overload",info->bits.OverLoad ? "true" : "false");
+	_dstr("ExtSrcConn",info->bits.ExtSrcConn ? "true" : "false");
+	_dstr("Silent",info->bits.Silent ? "true" : "false");
+	_dstr("Current",info->bits.Current ? "true" : "false");
+	_dstr("FeedSelfC",info->bits.FeedSelfC ? "true" : "false");
+	_outpower("Load",&info->load);
+	_dint("Charging procedure",info->charging_proc);
+	_dint("State",info->state);
+	_dint("Error Message",info->errmsg);
+	_outpower("AC2",&info->ac2);
+	dfloat("AC2 Frequency","%2.2f",info->ac2_frequency);
+	dfloat("PVPwrAt","%3.2f",info->PVPwrAt);
+	dfloat("GdCsmpPwrAt","%3.2f",info->GdCsmpPwrAt);
+	dfloat("GdFeedPwr","%3.2f",info->GdFeedPwr);
 }
 
 int init_inv(mybmm_inverter_t *inv, mybmm_config_t *c, char *type, char *transport, char *target, char *opts, mybmm_module_t *cp, mybmm_module_t *tp) {
@@ -400,11 +334,13 @@ int si_start(si_session_t *s) {
 	uint8_t data[8];
 
 	b = 0x01;
-	retries=5;
+	retries=10;
 	while(retries--) {
-		if (s->tp->write(s->tp_handle,0x35c,&b,1)) return 1;
+		dprintf(1,"writing...\n");
+		s->tp->write(s->tp_handle,0x35c,&b,1);
+		dprintf(1,"reading...\n");
 		if (s->get_data(s,0x307,data,8) == 0) {
-			bindump("data",data,8);
+			if (debug >= 3) bindump("data",data,8);
 			if (data[3] & 0x0002) return 0;
 		}
 		sleep(1);
@@ -418,11 +354,11 @@ int si_stop(si_session_t *s) {
 	uint8_t data[8];
 
 	b = 0x02;
-	retries=5;
+	retries=10;
 	while(retries--) {
-		if (s->tp->write(s->tp_handle,0x35c,&b,1)) return 1;
+		s->tp->write(s->tp_handle,0x35c,&b,1);
 		if (s->get_data(s,0x307,data,8) == 0) {
-			bindump("data",data,8);
+			if (debug >= 3) bindump("data",data,8);
 			if ((data[3] & 0x0002) == 0) return 0;
 		}
 		sleep(1);
@@ -506,10 +442,8 @@ int main(int argc, char **argv) {
                 }
         }
 	dprintf(1,"transport: %p, target: %p\n", transport, target);
-	if (!transport || !target) {
-		usage(argv[0]);
-		return 1;
-	}
+	if (!transport) transport = "can";
+	if (!target) target = "can0,500000";
 
         argc -= optind;
         argv += optind;
@@ -562,6 +496,7 @@ int main(int argc, char **argv) {
 	case SITOOL_ACTION_INFO:
 		if (inv.open(inv.handle)) return 1;
 		si_get_info(s,&info);
+		display_info(&info);
 		inv.close(inv.handle);
 		break;
 	case SITOOL_ACTION_START:
@@ -591,11 +526,11 @@ int main(int argc, char **argv) {
 
 			if (pack.open(pack.handle)) return 1;
 			if (jk_eeprom_start(pack.handle)) return 1;
-			bytes = jk_rw(pack.handle, JBD_CMD_READ, reg, data, sizeof(data));
+			bytes = jk_rw(pack.handle, SI_CMD_READ, reg, data, sizeof(data));
 			dprintf(3,"bytes: %d\n", bytes);
 			if (bytes > 0) {
 				sprintf(temp,"Register %02x\n", reg);
-				pdisp(temp,JBD_PARM_DT_INT,data,bytes);
+				pdisp(temp,SI_PARM_DT_INT,data,bytes);
 			}
 			jk_eeprom_end(pack.handle);
 			pack.close(pack.handle);
@@ -634,7 +569,7 @@ int main(int argc, char **argv) {
 						return 1;
 					}
 					memset(data,0,sizeof(data));
-					bytes = jk_rw(pack.handle, JBD_CMD_READ, pp->reg, data, sizeof(data));
+					bytes = jk_rw(pack.handle, SI_CMD_READ, pp->reg, data, sizeof(data));
 					if (bytes < 0) continue;
 					dprintf(3,"bytes: %d\n", bytes);
 					pdisp(pp->label,pp->dt,data,bytes);
@@ -660,7 +595,7 @@ int main(int argc, char **argv) {
 					dprintf(3,"pp: %p\n", pp);
 					if (!pp) continue;
 					memset(data,0,sizeof(data));
-					bytes = jk_rw(pack.handle, JBD_CMD_READ, pp->reg, data, sizeof(data));
+					bytes = jk_rw(pack.handle, SI_CMD_READ, pp->reg, data, sizeof(data));
 					if (bytes < 0) continue;
 					dprintf(3,"bytes: %d\n", bytes);
 					pdisp(pp->label,pp->dt,data,bytes);
@@ -677,7 +612,7 @@ int main(int argc, char **argv) {
 				for(pp = params; pp->label; pp++) {
 					dprintf(3,"pp->label: %s\n", pp->label);
 					memset(data,0,sizeof(data));
-					bytes = jk_rw(pack.handle, JBD_CMD_READ, pp->reg, data, sizeof(data));
+					bytes = jk_rw(pack.handle, SI_CMD_READ, pp->reg, data, sizeof(data));
 					if (bytes < 0) break;
 					if (bytes) pdisp(pp->label,pp->dt,data,bytes);
 				}
@@ -691,7 +626,7 @@ int main(int argc, char **argv) {
 						return 1;
 					}
 					memset(data,0,sizeof(data));
-					bytes = jk_rw(pack.handle, JBD_CMD_READ, pp->reg, data, sizeof(data));
+					bytes = jk_rw(pack.handle, SI_CMD_READ, pp->reg, data, sizeof(data));
 					if (bytes > 0) pdisp(pp->label,pp->dt,data,bytes);
 				}
 			}

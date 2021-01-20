@@ -2,6 +2,7 @@
 #include "si_info.h"
 #include "si.h"
 #include "debug.h"
+#include "utils.h"
 
 #define _getshort(v) (short)( ((v)[1]) << 8 | ((v)[0]) )
 
@@ -91,9 +92,9 @@ int si_get_info(si_session_t *s, si_info_t *info) {
 	SET(s1_relay1,0x0004);
 	SET(s1_relay2,0x0008);
 	SET(s2_relay1,0x0010);
-	SET(s2_relay1,0x0020);
+	SET(s2_relay2,0x0020);
 	SET(s3_relay1,0x0040);
-	SET(s3_relay1,0x0080);
+	SET(s3_relay2,0x0080);
 	bits = data[1];
 	dump_bits("data[1]",bits);
 	SET(GnRn,     0x0001);
@@ -140,12 +141,13 @@ int si_get_info(si_session_t *s, si_info_t *info) {
 
 	/* 0x309 AC2 Voltage L1 / AC2 Voltage L2 / AC2 Voltage L3 / AC2 Frequency */
 	s->get_data(s,0x309,data,8);
+	bindump("ac2",data,8);
 	info->ac2.l1 = _getshort(&data[0]) / 10.0;
 	info->ac2.l2 = _getshort(&data[2]) / 10.0;
 	info->ac2.l3 = _getshort(&data[4]) / 10.0;
 	info->ac2_frequency = _getshort(&data[6]) / 100.0;
 	dprintf(1,"ac2: l1: %.1f, l2: %.1f, l3: %.1f\n",info->ac2.l1, info->ac2.l2, info->ac2.l3);
-	dprintf(1,"ac2 frequency: %.1f\n",info->ac2_frequency);
+	dprintf(1,"ac2 frequency: %2.2f\n",info->ac2_frequency);
 
 	/* 0x30A PVPwrAt / GdCsmpPwrAt / GdFeedPwr */
 	s->get_data(s,0x30a,data,8);
