@@ -141,7 +141,6 @@ int si_get_info(si_session_t *s, si_info_t *info) {
 
 	/* 0x309 AC2 Voltage L1 / AC2 Voltage L2 / AC2 Voltage L3 / AC2 Frequency */
 	s->get_data(s,0x309,data,8);
-	bindump("ac2",data,8);
 	info->ac2.l1 = _getshort(&data[0]) / 10.0;
 	info->ac2.l2 = _getshort(&data[2]) / 10.0;
 	info->ac2.l3 = _getshort(&data[4]) / 10.0;

@@ -269,8 +269,10 @@ void display_info(si_info_t *info) {
 	_outpower("Active SI",&info->active.si);
 	_outpower("ReActive Grid",&info->reactive.grid);
 	_outpower("ReActive SI",&info->reactive.si);
-	_outpower("Voltage",&info->voltage);
-	dfloat("Frequency","%2.2f",info->frequency);
+	_outpower("AC1 Voltage",&info->voltage);
+	dfloat("AC1 Frequency","%2.2f",info->frequency);
+	_outpower("AC2 Voltage",&info->ac2);
+	dfloat("AC2 Frequency","%2.2f",info->ac2_frequency);
 	dfloat("Battery Voltage","%3.2f",info->battery_voltage);
 	dfloat("Battery Current","%3.2f",info->battery_current);
 	dfloat("Battery Temp","%3.2f",info->battery_temp);
@@ -307,8 +309,6 @@ void display_info(si_info_t *info) {
 	_dint("Charging procedure",info->charging_proc);
 	_dint("State",info->state);
 	_dint("Error Message",info->errmsg);
-	_outpower("AC2",&info->ac2);
-	dfloat("AC2 Frequency","%2.2f",info->ac2_frequency);
 	dfloat("PVPwrAt","%3.2f",info->PVPwrAt);
 	dfloat("GdCsmpPwrAt","%3.2f",info->GdCsmpPwrAt);
 	dfloat("GdFeedPwr","%3.2f",info->GdFeedPwr);
