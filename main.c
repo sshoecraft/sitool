@@ -277,7 +277,7 @@ void display_info(si_info_t *info) {
 	dfloat("Battery Current","%3.2f",info->battery_current);
 	dfloat("Battery Temp","%3.2f",info->battery_temp);
 	dfloat("Battery SoC","%3.2f",info->battery_soc);
-	dfloat("Battery Charge Volt-age Set-point","%3.2f",info->battery_cvsp);
+	dfloat("Battery CVSP","%3.2f",info->battery_cvsp);
 	_outrelay("Master Relay",info->bits.relay1,info->bits.relay2);
 	_outrelay("Slave1 Relays",info->bits.s1_relay1,info->bits.s1_relay2);
 	_outrelay("Slave2 Relays",info->bits.s2_relay1,info->bits.s2_relay2);
@@ -299,7 +299,7 @@ void display_info(si_info_t *info) {
 	_dstr("MccAutoLod",info->bits.MccAutoLod ? "true" : "false");
 	_dstr("CHP #1 On",info->bits.Chp ? "true" : "false");
 	_dstr("CHP #2 On",info->bits.ChpAdd ? "true" : "false");
-	_dstr("Remote relay control enabled",info->bits.SiComRemote ? "true" : "false");
+	_dstr("SiComRemote",info->bits.SiComRemote ? "true" : "false");
 	_dstr("Overload",info->bits.OverLoad ? "true" : "false");
 	_dstr("ExtSrcConn",info->bits.ExtSrcConn ? "true" : "false");
 	_dstr("Silent",info->bits.Silent ? "true" : "false");
@@ -345,6 +345,7 @@ int si_start(si_session_t *s) {
 		}
 		sleep(1);
 	}
+	if (retries < 0) printf("start failed.\n");
 	return (retries < 0 ? 1 : 0);
 }
 
@@ -363,6 +364,7 @@ int si_stop(si_session_t *s) {
 		}
 		sleep(1);
 	}
+	if (retries < 0) printf("stop failed.\n");
 	return (retries < 0 ? 1 : 0);
 }
 
