@@ -1,7 +1,7 @@
 
 PROG=$(shell basename $(shell pwd))
 MYBMM_SRC=../mybmm
-SRCS=main.c module.c si.c can.c si_info.c parson.c list.c utils.c log.c $(TRANSPORTS)
+SRCS=main.c module.c si.c can.c si_info.c parson.c list.c utils.c $(TRANSPORTS)
 OBJS=$(SRCS:.c=.o)
 CFLAGS=-DJKTOOL -I$(MYBMM_SRC)
 #CFLAGS+=-Wall -O2 -pipe
