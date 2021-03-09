@@ -219,7 +219,7 @@ void pdisp(char *label, int dt, uint8_t *data, int len) {
 #endif
 
 void _outpower(char *label, si_power_t *p) {
-	char str[32],temp[36];
+	char str[128],temp[196];
 
 	str[0] = 0;
 	sprintf(temp,"%3.2f",p->l1);
